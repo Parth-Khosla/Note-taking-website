@@ -1,0 +1,8 @@
+flask
+fastapi
+uvicorn
+flask-login
+python-dotenv
+pymongo
+bcrypt
+requests

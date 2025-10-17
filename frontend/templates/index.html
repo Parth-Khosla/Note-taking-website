@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NoteVault - Welcome</title>
+</head>
+<body>
+    <h2>Welcome to NoteVault</h2>
+    {% if session.username %}
+        <p>Logged in as {{ session.username }}</p>
+        <a href="#">Go to Dashboard</a>
+    {% else %}
+        <a href="{{ url_for('login') }}">Login</a> |
+        <a href="{{ url_for('register') }}">Register</a>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><title>Create Note</title></head>
+<body>
+    <h2>Create Note</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <p style="color: red;">{{ message }}</p>
+      {% endfor %}
+    {% endwith %}
+    <form method="POST" enctype="multipart/form-data">
+        <label>Note Type:</label><br>
+        <select name="note_type" id="note_type" onchange="toggleFields()" required>
+            <option value="text">Text</option>
+            <option value="audio">Audio</option>
+            <option value="file">File</option>
+        </select><br><br>
+
+        <div id="text_field">
+            <label>Text Content:</label><br>
+            <textarea name="content"></textarea><br>
+        </div>
+
+        <div id="file_field" style="display:none;">
+            <label>Upload File:</label><br>
+            <input type="file" name="file" accept="audio/*,.pdf,image/*,text/*"><br>
+        </div><br>
+
+        <button type="submit">Save Note</button>
+    </form>
+
+    <p><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+
+    <script>
+        function toggleFields() {
+            const type = document.getElementById('note_type').value;
+            document.getElementById('text_field').style.display = (type === 'text') ? 'block' : 'none';
+            document.getElementById('file_field').style.display = (type !== 'text') ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
