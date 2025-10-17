@@ -12,10 +12,8 @@ API_AUTH = "http://localhost:8000/api/auth"
 API_NOTES = "http://localhost:8000/api/notes"
 '''
 
-# Base URL for backend API (change when deploying)
-API_BASE = os.getenv("API_BASE", "http://localhost:8000")
-API_AUTH = f"{API_BASE}/api/auth"
-API_NOTES = f"{API_BASE}/api/notes"
+API_AUTH = "http://localhost:8000/api/auth"
+API_NOTES = "http://localhost:8000/api/notes"
 
 @app.route("/")
 def index():
