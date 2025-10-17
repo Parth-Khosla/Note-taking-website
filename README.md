@@ -130,6 +130,5 @@ This project is open-source under the **MIT License**.
 ---
 
 ## ✨ Author
-**Parth**  
-🎓 Computer Science Student specializing in Cloud Computing  
-💬 Loves building full-stack cloud-integrated apps with automation and analytics.
+**Parth Khosla**  
+🎓 Computer Science Student specializing in Cloud Computing 
