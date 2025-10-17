@@ -4,8 +4,18 @@ import requests, os
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "devsecret")
 
+#Replace the following accordingly
+
+'''
+Use this for local runnings
 API_AUTH = "http://localhost:8000/api/auth"
 API_NOTES = "http://localhost:8000/api/notes"
+'''
+
+# Base URL for backend API (change when deploying)
+API_BASE = os.getenv("API_BASE", "http://localhost:8000")
+API_AUTH = f"{API_BASE}/api/auth"
+API_NOTES = f"{API_BASE}/api/notes"
 
 @app.route("/")
 def index():

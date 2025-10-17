@@ -8,3 +8,5 @@ bcrypt
 requests
 python-multipart
 gunicorn
+pydantic
+httpx
