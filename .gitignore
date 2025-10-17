@@ -1,6 +1,6 @@
 temp
 __pycache__/
-uploads/
+#uploads/
 .env
 *.pyc
 temp.txt
