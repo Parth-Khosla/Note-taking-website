@@ -51,6 +51,7 @@ Store sensitive data in an `.env` file at the project root:
 MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/<database>
 SECRET_KEY=some-secret-key
 UPLOAD_DIR=uploads
+API_BASE=your-site-link or can be localhost
 ```
 
 > ⚠️ Never commit your `.env` file to GitHub. Keep it private.
