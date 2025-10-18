@@ -5,6 +5,12 @@ from datetime import datetime
 from backend.utils.db_connection import db
 from gridfs import GridFS
 from bson.objectid import ObjectId
+import logging
+
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    # basic configuration; uvicorn/fastapi will integrate its own handlers in production
+    logging.basicConfig(level=logging.INFO)
 
 notes_collection = db["notes"]
 fs = GridFS(db)
@@ -77,6 +83,7 @@ def save_note(username, note_type, content=None, file=None, title=None):
     # File based notes: audio, file, image, video, pdf, docx etc.
     else:
         if not file:
+            logger.warning("save_note called with note_type=%s but no file provided", note_type)
             return {"error": "No file uploaded."}
 
         # Read bytes from supported file objects
@@ -86,6 +93,7 @@ def save_note(username, note_type, content=None, file=None, title=None):
             try:
                 file_bytes = file.stream.read()
             except Exception:
+                logger.exception("Unable to read uploaded file for user %s", username)
                 return {"error": "Unable to read uploaded file."}
 
         filename = getattr(file, "filename", None) or getattr(file, "name", None) or "upload"
@@ -117,7 +125,10 @@ def save_note(username, note_type, content=None, file=None, title=None):
                 },
             )
         except Exception as e:
+            logger.exception("Failed to put file into GridFS for user %s: %s", username, e)
             return {"error": f"Failed to store file: {str(e)}"}
+
+        logger.info("Stored file in GridFS: filename=%s file_id=%s content_type=%s size=%d", filename, str(grid_out_id), content_type, len(file_bytes) if file_bytes else 0)
 
         # If GridFS filename lacks extension, attempt to re-store the file with an inferred extension
         # so the file document stored in GridFS has a proper filename (some clients send unnamed blobs).
@@ -139,10 +150,12 @@ def save_note(username, note_type, content=None, file=None, title=None):
                     try:
                         fs.delete(grid_out_id)
                     except Exception:
-                        pass
+                        logger.warning("Failed to delete original GridFS file %s after re-put", grid_out_id)
                     grid_out_id = new_id
                     filename = new_filename
+                    logger.info("Re-stored GridFS file with inferred extension: new_filename=%s new_id=%s", new_filename, str(new_id))
                 except Exception:
+                    logger.exception("Failed to re-put GridFS file with inferred extension for user %s", username)
                     # if re-put fails, fall back to leaving original as-is but we keep metadata
                     pass
 
@@ -156,11 +169,12 @@ def save_note(username, note_type, content=None, file=None, title=None):
         if lower.endswith(".docx"):
             extracted = _extract_text_from_docx(file_bytes)
             if extracted:
-                note_data["content"] = extracted
+                # store extracted text separately so UI can still show a downloadable file
+                note_data["extracted_text"] = extracted
         elif lower.endswith(".pdf"):
             extracted = _extract_text_from_pdf(file_bytes)
             if extracted:
-                note_data["content"] = extracted
+                note_data["extracted_text"] = extracted
 
     # insert into notes collection
     try:
