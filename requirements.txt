@@ -10,3 +10,5 @@ python-multipart
 gunicorn
 pydantic
 httpx
+python-docx
+PyPDF2

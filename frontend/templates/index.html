@@ -1,16 +1,19 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>NoteVault - Welcome</title>
-</head>
-<body>
-    <h2>Welcome to NoteVault</h2>
-    {% if session.username %}
-        <p>Logged in as {{ session.username }}</p>
-        <a href="#">Go to Dashboard</a>
-    {% else %}
-        <a href="{{ url_for('login') }}">Login</a> |
-        <a href="{{ url_for('register') }}">Register</a>
-    {% endif %}
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}Welcome - NoteVault{% endblock %}
+
+{% block content %}
+    <section class="hero">
+        <h2>Welcome to NoteVault</h2>
+        {% if session.username %}
+            <p>Logged in as <strong>{{ session.username }}</strong></p>
+            <p><a class="btn" href="{{ url_for('dashboard') }}">Go to Dashboard</a></p>
+        {% else %}
+            <p>
+                <a class="btn" href="{{ url_for('login') }}">Login</a>
+                <span class="sep">|</span>
+                <a class="btn btn-outline" href="{{ url_for('register') }}">Register</a>
+            </p>
+        {% endif %}
+    </section>
+{% endblock %}

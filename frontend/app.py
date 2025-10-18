@@ -66,6 +66,10 @@ def dashboard():
         return redirect(url_for("login"))
     username = session["username"]
     response = requests.get(f"{API_NOTES}/user/{username}").json()
+    # Add file_url for notes that have a file_id so templates can directly link to backend download
+    for n in response:
+        if isinstance(n, dict) and n.get("file_id"):
+            n["file_url"] = f"{API_NOTES}/file/{n['file_id']}"
     return render_template("dashboard.html", username=username, notes=response)
 
 @app.route("/create_note", methods=["GET", "POST"])

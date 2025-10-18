@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}NoteVault{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <h1 class="site-title"><a href="{{ url_for('index') }}">NoteVault</a></h1>
+        <nav aria-label="Main navigation">
+          <ul class="nav-list">
+            {% if session.username %}
+              <li class="nav-item">Hello, <strong>{{ session.username }}</strong></li>
+              <li class="nav-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+              <li class="nav-item"><a href="{{ url_for('logout') }}">Logout</a></li>
+            {% else %}
+              <li class="nav-item"><a href="{{ url_for('index') }}">Home</a></li>
+              <li class="nav-item"><a href="{{ url_for('login') }}">Login</a></li>
+              <li class="nav-item"><a href="{{ url_for('register') }}">Register</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container" id="main">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <small>&copy; {{ current_year if current_year is defined else '' }} NoteVault</small>
+      </div>
+    </footer>
+  </body>
+</html>

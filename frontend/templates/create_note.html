@@ -1,42 +1,51 @@
-<!DOCTYPE html>
-<html>
-<head><title>Create Note</title></head>
-<body>
-    <h2>Create Note</h2>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <p style="color: red;">{{ message }}</p>
-      {% endfor %}
-    {% endwith %}
-    <form method="POST" enctype="multipart/form-data">
-        <label>Note Type:</label><br>
-        <select name="note_type" id="note_type" onchange="toggleFields()" required>
-            <option value="text">Text</option>
-            <option value="audio">Audio</option>
-            <option value="file">File</option>
-        </select><br><br>
+{% extends 'base.html' %}
 
-        <div id="text_field">
-            <label>Text Content:</label><br>
-            <textarea name="content"></textarea><br>
-        </div>
+{% block title %}Create Note - NoteVault{% endblock %}
 
-        <div id="file_field" style="display:none;">
-            <label>Upload File:</label><br>
-            <input type="file" name="file" accept="audio/*,.pdf,image/*,text/*"><br>
-        </div><br>
+{% block content %}
+    <section class="create-note" aria-labelledby="create-note-heading">
+        <h2 id="create-note-heading">Create Note</h2>
 
-        <button type="submit">Save Note</button>
-    </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}" role="status">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
 
-    <p><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-row">
+                <label for="note_type">Note Type</label>
+                <select name="note_type" id="note_type" onchange="toggleFields()" required>
+                    <option value="text">Text</option>
+                    <option value="audio">Audio</option>
+                    <option value="file">File</option>
+                </select>
+            </div>
 
-    <script>
-        function toggleFields() {
-            const type = document.getElementById('note_type').value;
-            document.getElementById('text_field').style.display = (type === 'text') ? 'block' : 'none';
-            document.getElementById('file_field').style.display = (type !== 'text') ? 'block' : 'none';
-        }
-    </script>
-</body>
-</html>
+            <div id="text_field" class="form-row">
+                <label for="content">Text Content</label>
+                <textarea id="content" name="content" rows="6"></textarea>
+            </div>
+
+            <div id="file_field" class="form-row" style="display:none;">
+                <label for="file">Upload File</label>
+                <input id="file" type="file" name="file" accept="audio/*,video/*,.pdf,.docx,image/*,text/*">
+            </div>
+
+            <div class="form-actions">
+                <button class="btn" type="submit">Save Note</button>
+                <a class="btn btn-outline" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+            </div>
+        </form>
+
+        <script>
+            function toggleFields() {
+                const type = document.getElementById('note_type').value;
+                document.getElementById('text_field').style.display = (type === 'text') ? 'block' : 'none';
+                document.getElementById('file_field').style.display = (type !== 'text') ? 'block' : 'none';
+            }
+            // initialize visibility on load
+            document.addEventListener('DOMContentLoaded', toggleFields);
+        </script>
+    </section>
+{% endblock %}

@@ -1,26 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head><title>Dashboard</title></head>
-<body>
-    <h2>Welcome, {{ username }}</h2>
-    <p><a href="{{ url_for('create_note') }}">Create New Note</a> | <a href="{{ url_for('logout') }}">Logout</a></p>
+{% extends 'base.html' %}
 
-    <h3>Your Notes:</h3>
-    {% if notes %}
-        <ul>
-        {% for note in notes %}
-            <li>
-                {{ note.note_type }} - {{ note.timestamp }}
-                {% if note.content %}
-                    <p>{{ note.content }}</p>
-                {% elif note.file_path %}
-                    <p><a href="/{{ note.file_path }}">View File</a></p>
-                {% endif %}
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No notes found.</p>
-    {% endif %}
-</body>
-</html>
+{% block title %}Dashboard - NoteVault{% endblock %}
+
+{% block content %}
+    <section class="dashboard">
+        <header class="dashboard-header">
+            <h2>Welcome, {{ username }}</h2>
+            <p class="actions"><a class="btn" href="{{ url_for('create_note') }}">Create New Note</a> <a class="btn btn-outline" href="{{ url_for('logout') }}">Logout</a></p>
+        </header>
+
+        <h3>Your Notes</h3>
+        {% if notes %}
+            <ul class="note-list">
+                {% for note in notes %}
+                    <li class="note-item">
+                        <div class="note-meta">{{ note.note_type }} — <time>{{ note.timestamp }}</time></div>
+                        {% if note.content %}
+                            <p class="note-content">{{ note.content }}</p>
+                                                {% elif note.file_url or note.file_path %}
+                                                        {% if note.file_url %}
+                                                            <p><a href="{{ note.file_url }}" class="btn btn-sm">View File</a></p>
+                                                        {% else %}
+                                                            <p><a href="/{{ note.file_path }}" class="btn btn-sm">View File</a></p>
+                                                        {% endif %}
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="muted">No notes found.</p>
+        {% endif %}
+    </section>
+{% endblock %}

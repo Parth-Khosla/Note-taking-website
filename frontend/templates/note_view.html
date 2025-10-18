@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}View Note - NoteVault{% endblock %}
+
+{% block content %}
+  <article class="note-view">
+    <header>
+      <h2>{{ note.title if note.title is defined else 'Note' }}</h2>
+      <p class="meta">{{ note.note_type }} — <time>{{ note.timestamp }}</time></p>
+    </header>
+
+    <section class="note-body">
+      {% if note.content %}
+        <p>{{ note.content }}</p>
+      {% elif note.file_url or note.file_path %}
+        {% if note.file_url %}
+          <p><a href="{{ note.file_url }}">Download / View file</a></p>
+        {% else %}
+          <p><a href="/{{ note.file_path }}">Download / View file</a></p>
+        {% endif %}
+      {% else %}
+        <p class="muted">No content available for this note.</p>
+      {% endif %}
+    </section>
+
+    <footer>
+      <p><a class="btn" href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+    </footer>
+  </article>
+{% endblock %}

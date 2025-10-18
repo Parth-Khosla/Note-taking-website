@@ -1,0 +1,48 @@
+:root{
+:root{
+	--color-bg:#f7f7fb;
+	--color-card:#ffffff;
+	--color-accent:#0b76ef;
+	--color-muted:#6b7280;
+	--max-width:900px;
+}
+*{box-sizing:border-box}
+body{font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--color-bg);color:#111;margin:0;line-height:1.5}
+.container{max-width:var(--max-width);margin:1.5rem auto;padding:0 1rem}
+.site-header{background:var(--color-card);border-bottom:1px solid #e6e9ef}
+.site-header .container{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem}
+.site-title a{color:var(--color-accent);text-decoration:none}
+.nav-list{list-style:none;margin:0;padding:0;display:flex;gap:0.5rem}
+.nav-item{margin:0}
+.nav-item a{color:inherit;text-decoration:none;padding:0.4rem 0.6rem;border-radius:4px}
+
+.hero{padding:2rem 0;text-align:center}
+.btn{background:var(--color-accent);color:#fff;padding:0.5rem 0.8rem;border:none;border-radius:5px;text-decoration:none;display:inline-block}
+.btn-outline{background:transparent;border:1px solid #d0d7e6;color:var(--color-accent)}
+.btn-sm{padding:0.25rem 0.5rem;font-size:0.9rem}
+.sep{margin:0 0.4rem;color:var(--color-muted)}
+
+.auth-card,.create-note{background:var(--color-card);padding:1rem;border-radius:6px;border:1px solid #eef2f6}
+.auth-card h2,.create-note h2{margin-top:0}
+.form-row{margin-bottom:0.75rem}
+.form-row label{display:block;margin-bottom:0.25rem;font-weight:600}
+.form-row input[type="text"],.form-row input[type="email"],.form-row input[type="password"],.form-row textarea,.form-row select{width:100%;padding:0.5rem;border:1px solid #d7dee9;border-radius:4px}
+.form-actions{display:flex;gap:0.5rem;align-items:center}
+
+.dashboard-header{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.note-list{list-style:none;padding:0;margin:0}
+.note-item{background:#fff;padding:0.75rem;border-radius:6px;border:1px solid #eef2f6;margin-bottom:0.5rem}
+.note-meta{font-size:0.9rem;color:var(--color-muted);margin-bottom:0.5rem}
+.muted{color:var(--color-muted)}
+
+.site-footer{padding:1rem 0;text-align:center;color:var(--color-muted)}
+
+.flash{padding:0.5rem;border-radius:4px;margin-bottom:0.75rem}
+.flash.error{background:#fff1f0;color:#9b1c1c;border:1px solid #ffd2d2}
+.flash.success{background:#f0fff4;color:#0b6623;border:1px solid #c7f0d8}
+
+@media (max-width:600px){
+	.dashboard-header{flex-direction:column;align-items:flex-start}
+	.site-header .container{flex-direction:column;align-items:flex-start;gap:0.5rem}
+}
+}
