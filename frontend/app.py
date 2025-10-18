@@ -1,8 +1,12 @@
 from flask import Flask, render_template, request, redirect, flash, url_for, session
 import requests, os
+from dotenv import load_dotenv
 
+
+load_dotenv()  # loads variables from .env into os.environ
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "devsecret")
+#print(app.secret_key) #used for debugging
 
 #Replace the following accordingly
 
@@ -11,9 +15,16 @@ Use this for local runnings
 API_AUTH = "http://localhost:8000/api/auth"
 API_NOTES = "http://localhost:8000/api/notes"
 '''
+"""
+replace with domain name where the backend is running
+API_AUTH = "domain name/api/auth"
+API_NOTES = "domain name/api/notes"
+"""
 
-API_AUTH = "http://localhost:8000/api/auth"
-API_NOTES = "http://localhost:8000/api/notes"
+API_BASE = os.getenv("API_BASE", "http://localhost:8000/api")
+#print(API_BASE) #used for debugging
+API_AUTH = f"{API_BASE}/auth"
+API_NOTES = f"{API_BASE}/notes"
 
 @app.route("/")
 def index():
