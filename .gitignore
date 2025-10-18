@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 temp.txt
 .venv
+tmp_test_upload.py

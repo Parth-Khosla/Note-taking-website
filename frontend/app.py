@@ -80,13 +80,20 @@ def create_note():
 
     if request.method == "POST":
         note_type = request.form["note_type"]
-        data = {"username": session["username"], "note_type": note_type}
+        data = {"username": session["username"], "note_type": note_type, "title": request.form.get("title")}
 
         files = None
         if note_type == "text":
-            data["content"] = request.form["content"]
+            data["content"] = request.form.get("content")
         else:
-            files = {"file": request.files["file"]}
+            uploaded = request.files.get("file")
+            if uploaded:
+                import io
+                # Read raw bytes to ensure binary content is preserved (avoid text-mode streams)
+                uploaded_bytes = uploaded.read()
+                files = {"file": (uploaded.filename, io.BytesIO(uploaded_bytes), uploaded.mimetype)}
+            else:
+                files = None
 
         response = requests.post(f"{API_NOTES}/create", data=data, files=files).json()
         if "error" in response:

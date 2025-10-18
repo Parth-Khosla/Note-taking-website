@@ -1,4 +1,6 @@
 import io
+import os
+import mimetypes
 from datetime import datetime
 from backend.utils.db_connection import db
 from gridfs import GridFS
@@ -58,12 +60,15 @@ def _extract_text_from_pdf(file_bytes):
         return None
 
 
-def save_note(username, note_type, content=None, file=None):
+def save_note(username, note_type, content=None, file=None, title=None):
     note_data = {
         "username": username,
         "note_type": note_type,
         "timestamp": datetime.utcnow()
     }
+
+    if title:
+        note_data["title"] = title
 
     # Text-only notes
     if note_type == "text":
@@ -86,15 +91,65 @@ def save_note(username, note_type, content=None, file=None):
         filename = getattr(file, "filename", None) or getattr(file, "name", None) or "upload"
         content_type = getattr(file, "content_type", None) or getattr(file, "mimetype", None) or "application/octet-stream"
 
+        # ensure filename has an extension; if not, try to infer from content_type
+        base, ext = os.path.splitext(filename)
+        if not ext:
+            guessed = mimetypes.guess_extension(content_type.split(";")[0].strip())
+            if guessed:
+                filename = f"{filename}{guessed}"
+
+        # store original filename and extension for later use
+        _, ext = os.path.splitext(filename)
+        note_data["original_filename"] = getattr(file, "filename", filename)
+        note_data["extension"] = ext.lstrip('.') if ext else ''
+
         # store file in GridFS
         try:
-            grid_out_id = fs.put(file_bytes, filename=filename, contentType=content_type)
+            # Store file into GridFS. Include original filename and extension in metadata so
+            # downloads can use the proper filename and extension.
+            grid_out_id = fs.put(
+                file_bytes,
+                filename=filename,
+                metadata={
+                    "original_filename": getattr(file, "filename", filename),
+                    "extension": note_data.get("extension", ""),
+                    "content_type": content_type,
+                },
+            )
         except Exception as e:
             return {"error": f"Failed to store file: {str(e)}"}
+
+        # If GridFS filename lacks extension, attempt to re-store the file with an inferred extension
+        # so the file document stored in GridFS has a proper filename (some clients send unnamed blobs).
+        base, ext = os.path.splitext(filename)
+        if not ext:
+            # infer extension from metadata or content-type
+            inferred = note_data.get("extension")
+            if not inferred:
+                inferred = mimetypes.guess_extension(content_type.split(";")[0].strip())
+                if inferred and inferred.startswith('.'):
+                    inferred = inferred.lstrip('.')
+
+            if inferred:
+                new_filename = f"{filename}.{inferred}" if not filename.endswith(f".{inferred}") else filename
+                try:
+                    # Read original from GridFS and re-put with new filename
+                    original = fs.get(grid_out_id)
+                    new_id = fs.put(original.read(), filename=new_filename, metadata=original.metadata or {})
+                    try:
+                        fs.delete(grid_out_id)
+                    except Exception:
+                        pass
+                    grid_out_id = new_id
+                    filename = new_filename
+                except Exception:
+                    # if re-put fails, fall back to leaving original as-is but we keep metadata
+                    pass
 
         note_data["file_id"] = grid_out_id
         note_data["filename"] = filename
         note_data["content_type"] = content_type
+        note_data["stored_filename"] = filename
 
         # attempt lightweight conversions/extraction for searchable content
         lower = (filename or "").lower()
@@ -123,3 +178,13 @@ def get_notes(username):
         if "file_id" in n and isinstance(n["file_id"], ObjectId):
             n["file_id"] = str(n["file_id"])
     return user_notes
+
+
+def get_note_by_file_id(file_id):
+    """Return the note document (without _id) matching a GridFS file_id if present."""
+    try:
+        oid = ObjectId(file_id)
+    except Exception:
+        return None
+    doc = notes_collection.find_one({"file_id": oid}, {"_id": 0})
+    return doc

@@ -15,14 +15,17 @@
                 {% for note in notes %}
                     <li class="note-item">
                         <div class="note-meta">{{ note.note_type }} — <time>{{ note.timestamp }}</time></div>
+                        {% if note.title %}
+                          <h4 class="note-title">{{ note.title }} — {{ note.note_type }} ({{ note.timestamp }})</h4>
+                        {% endif %}
                         {% if note.content %}
                             <p class="note-content">{{ note.content }}</p>
-                                                {% elif note.file_url or note.file_path %}
-                                                        {% if note.file_url %}
-                                                            <p><a href="{{ note.file_url }}" class="btn btn-sm">View File</a></p>
-                                                        {% else %}
-                                                            <p><a href="/{{ note.file_path }}" class="btn btn-sm">View File</a></p>
-                                                        {% endif %}
+                        {% elif note.file_url or note.file_path %}
+                            {% if note.file_url %}
+                                <p><a href="{{ note.file_url }}" class="btn btn-sm">View File</a></p>
+                            {% else %}
+                                <p><a href="/{{ note.file_path }}" class="btn btn-sm">View File</a></p>
+                            {% endif %}
                         {% endif %}
                     </li>
                 {% endfor %}

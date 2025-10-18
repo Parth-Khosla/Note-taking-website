@@ -1,5 +1,4 @@
 :root{
-:root{
 	--color-bg:#f7f7fb;
 	--color-card:#ffffff;
 	--color-accent:#0b76ef;
@@ -18,7 +17,8 @@ body{font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--color-bg);
 
 .hero{padding:2rem 0;text-align:center}
 .btn{background:var(--color-accent);color:#fff;padding:0.5rem 0.8rem;border:none;border-radius:5px;text-decoration:none;display:inline-block}
-.btn-outline{background:transparent;border:1px solid #d0d7e6;color:var(--color-accent)}
+.btn-outline{background:transparent;border:1px solid rgba(13,22,39,0.12);color:var(--color-accent);padding:0.45rem 0.75rem;border-radius:5px}
+.btn, .btn-outline{font-weight:600}
 .btn-sm{padding:0.25rem 0.5rem;font-size:0.9rem}
 .sep{margin:0 0.4rem;color:var(--color-muted)}
 
@@ -44,5 +44,4 @@ body{font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--color-bg);
 @media (max-width:600px){
 	.dashboard-header{flex-direction:column;align-items:flex-start}
 	.site-header .container{flex-direction:column;align-items:flex-start;gap:0.5rem}
-}
 }
