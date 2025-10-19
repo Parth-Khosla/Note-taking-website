@@ -23,8 +23,8 @@ API_NOTES = "domain name/api/notes"
 
 API_BASE = os.getenv("API_BASE", "http://localhost:8000/api")
 #print(API_BASE) #used for debugging
-API_AUTH = f"{API_BASE}/auth"
-API_NOTES = f"{API_BASE}/notes"
+API_AUTH = f"{API_BASE}/api/auth"
+API_NOTES = f"{API_BASE}/api/notes"
 
 @app.route("/")
 def index():
