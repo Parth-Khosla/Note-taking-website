@@ -10,19 +10,22 @@
     <header class="site-header">
       <div class="container">
         <h1 class="site-title"><a href="{{ url_for('index') }}">NoteVault</a></h1>
-        <nav aria-label="Main navigation">
-          <ul class="nav-list">
-            {% if session.username %}
-              <li class="nav-item">Hello, <strong>{{ session.username }}</strong></li>
-              <li class="nav-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-              <li class="nav-item"><a href="{{ url_for('logout') }}">Logout</a></li>
-            {% else %}
-              <li class="nav-item"><a href="{{ url_for('index') }}">Home</a></li>
-              <li class="nav-item"><a href="{{ url_for('login') }}">Login</a></li>
-              <li class="nav-item"><a href="{{ url_for('register') }}">Register</a></li>
-            {% endif %}
-          </ul>
-        </nav>
+        <div class="header-actions">
+          <nav aria-label="Main navigation">
+            <ul class="nav-list">
+              {% if session.username %}
+                <li class="nav-item">Hello, <strong>{{ session.username }}</strong></li>
+                <li class="nav-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="nav-item"><a href="{{ url_for('logout') }}">Logout</a></li>
+              {% else %}
+                <li class="nav-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="nav-item"><a href="{{ url_for('login') }}">Login</a></li>
+                <li class="nav-item"><a href="{{ url_for('register') }}">Register</a></li>
+              {% endif %}
+            </ul>
+          </nav>
+          <!-- light-mode site — theme toggle removed -->
+        </div>
       </div>
     </header>
 
@@ -32,8 +35,9 @@
 
     <footer class="site-footer">
       <div class="container">
-        <small>&copy; {{ current_year if current_year is defined else '' }} NoteVault</small>
+        <small>{{ current_year if current_year is defined else '' }} NoteVault</small>
       </div>
     </footer>
+    <!-- theme toggle removed; site intentionally uses light theme only -->
   </body>
 </html>

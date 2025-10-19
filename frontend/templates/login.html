@@ -5,6 +5,7 @@
 {% block content %}
   <section class="auth-card" aria-labelledby="login-heading">
     <h2 id="login-heading">Login</h2>
+  <p class="muted">Access your notes. Your credentials are only used for authentication.</p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}
