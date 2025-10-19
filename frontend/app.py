@@ -83,6 +83,31 @@ def dashboard():
             n["file_url"] = f"{API_NOTES}/file/{n['file_id']}"
     return render_template("dashboard.html", username=username, notes=response)
 
+
+@app.route('/notes/search')
+def notes_search():
+    if 'username' not in session:
+        return {"error": "Not authenticated"}, 401
+    username = session['username']
+    q = request.args.get('q', '')
+    resp = requests.get(f"{API_NOTES}/search/{username}", params={"q": q})
+    data = resp.json()
+    # add file_url where applicable
+    for n in data:
+        if isinstance(n, dict) and n.get('file_id'):
+            n['file_url'] = f"{API_NOTES}/file/{n['file_id']}"
+    return {"notes": data}
+
+
+@app.route('/notes/<note_id>', methods=['DELETE'])
+def notes_delete(note_id):
+    if 'username' not in session:
+        return {"error": "Not authenticated"}, 401
+    resp = requests.delete(f"{API_NOTES}/{note_id}")
+    if resp.status_code != 200:
+        return {"error": resp.text}, resp.status_code
+    return {"message": "deleted"}
+
 @app.route("/create_note", methods=["GET", "POST"])
 def create_note():
     if "username" not in session:

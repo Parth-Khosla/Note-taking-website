@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Form, File, UploadFile, HTTPException, Response
 import os
 from backend.services.notes_service import save_note, get_notes, fs
+from backend.services.notes_service import delete_note, search_notes
 from bson.objectid import ObjectId
 
 router = APIRouter(prefix="/api/notes")
@@ -63,3 +64,17 @@ def download_file(file_id: str):
 
     headers = {"Content-Disposition": f"attachment; filename=\"{filename_for_download}\""}
     return Response(content=grid_out.read(), media_type=grid_out.content_type or "application/octet-stream", headers=headers)
+
+
+@router.delete("/{note_id}")
+def remove_note(note_id: str):
+    success = delete_note(note_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Note not found or could not be deleted")
+    return {"message": "Note deleted"}
+
+
+@router.get("/search/{username}")
+def notes_search(username: str, q: str = None):
+    # q is an optional query string parameter
+    return search_notes(username, q)

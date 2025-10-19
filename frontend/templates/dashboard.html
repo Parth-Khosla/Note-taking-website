@@ -9,35 +9,103 @@
             <p class="actions"><a class="btn" href="{{ url_for('create_note') }}">Create New Note</a> <a class="btn btn-outline" href="{{ url_for('logout') }}">Logout</a></p>
         </header>
 
+        <div class="search-row" style="margin:0.75rem 0;display:flex;gap:0.5rem;align-items:center">
+            <input id="note-search" placeholder="Search by title, content or file" style="flex:1;padding:0.5rem;border-radius:6px;border:1px solid #d7dee9" />
+            <button id="search-btn" class="btn btn-sm">Search</button>
+            <button id="clear-search" class="btn btn-outline btn-sm">Clear</button>
+        </div>
+
         <h3>Your Notes</h3>
-        {% if notes %}
-            <ul class="note-list">
-                {% for note in notes %}
-                    <li class="note-item">
-                        <div class="note-meta">{{ note.note_type }} — <time>{{ note.timestamp }}</time></div>
-                        {% if note.title %}
-                          <h4 class="note-title">{{ note.title }} — {{ note.note_type }} ({{ note.timestamp }})</h4>
-                        {% endif %}
-                        {% if note.content and not (note.file_url or note.file_path) %}
-                            <p class="note-content">{{ note.content }}</p>
-                        {% elif note.file_url or note.file_path %}
-                            {% if note.file_url %}
-                                <p><a href="{{ note.file_url }}" class="btn btn-sm">View File</a></p>
-                            {% else %}
-                                <p><a href="/{{ note.file_path }}" class="btn btn-sm">View File</a></p>
-                            {% endif %}
-                            {% if note.extracted_text %}
-                                <details>
-                                  <summary>Show extracted text</summary>
-                                  <pre>{{ note.extracted_text[:1000] }}</pre>
-                                </details>
-                            {% endif %}
-                        {% endif %}
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="muted">No notes found.</p>
-        {% endif %}
+                <div id="notes-container">
+                {% if notes %}
+                        <ul class="note-list">
+                                {% for note in notes %}
+                                        <li class="note-item" data-note-id="{{ note.note_id }}">
+                                                <div class="note-meta">{{ note.note_type }} — <time>{{ note.timestamp }}</time></div>
+                                                {% if note.title %}
+                                                    <h4 class="note-title">{{ note.title }} — {{ note.note_type }} ({{ note.timestamp }})</h4>
+                                                {% endif %}
+                                                {% if note.content and not (note.file_url or note.file_path) %}
+                                                        <p class="note-content">{{ note.content }}</p>
+                                                {% elif note.file_url or note.file_path %}
+                                                        {% if note.file_url %}
+                                                                <p><a href="{{ note.file_url }}" class="btn btn-sm">View File</a></p>
+                                                        {% else %}
+                                                                <p><a href="/{{ note.file_path }}" class="btn btn-sm">View File</a></p>
+                                                        {% endif %}
+                                                        {% if note.extracted_text %}
+                                                                <details>
+                                                                    <summary>Show extracted text</summary>
+                                                                    <pre>{{ note.extracted_text[:1000] }}</pre>
+                                                                </details>
+                                                        {% endif %}
+                                                {% endif %}
+                                                <div style="margin-top:0.6rem;display:flex;gap:0.5rem;">
+                                                    <button class="btn btn-outline btn-sm delete-note">Delete</button>
+                                                </div>
+                                        </li>
+                                {% endfor %}
+                        </ul>
+                {% else %}
+                        <p class="muted">No notes found.</p>
+                {% endif %}
+                </div>
+                <script>
+                    (function(){
+                        const searchInput = document.getElementById('note-search');
+                        const searchBtn = document.getElementById('search-btn');
+                        const clearBtn = document.getElementById('clear-search');
+                        const notesContainer = document.getElementById('notes-container');
+
+                        function renderNotes(notes){
+                            if(!Array.isArray(notes) || notes.length === 0){
+                                notesContainer.innerHTML = '<p class="muted">No notes found.</p>';
+                                return;
+                            }
+                            const list = document.createElement('ul');
+                            list.className = 'note-list';
+                            notes.forEach(n=>{
+                                const li = document.createElement('li');
+                                li.className = 'note-item';
+                                li.setAttribute('data-note-id', n.note_id || '');
+                                const meta = document.createElement('div'); meta.className='note-meta'; meta.textContent = (n.note_type || '') + ' — ' + (n.timestamp || '');
+                                li.appendChild(meta);
+                                if(n.title){ const h4 = document.createElement('h4'); h4.className='note-title'; h4.textContent = `${n.title} — ${n.note_type || ''} (${n.timestamp || ''})`; li.appendChild(h4); }
+                                if(n.content && !n.file_url){ const p = document.createElement('p'); p.className='note-content'; p.textContent = n.content; li.appendChild(p); }
+                                else if(n.file_url){ const p = document.createElement('p'); const a = document.createElement('a'); a.href = n.file_url; a.className='btn btn-sm'; a.textContent='View File'; p.appendChild(a); li.appendChild(p); }
+                                if(n.extracted_text){ const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent='Show extracted text'; const pre = document.createElement('pre'); pre.textContent = n.extracted_text.slice(0,1000); details.appendChild(summary); details.appendChild(pre); li.appendChild(details); }
+                                const actions = document.createElement('div'); actions.style.marginTop='0.6rem'; actions.style.display='flex'; actions.style.gap='0.5rem'; const del = document.createElement('button'); del.className='btn btn-outline btn-sm delete-note'; del.textContent='Delete'; actions.appendChild(del); li.appendChild(actions);
+                                list.appendChild(li);
+                            });
+                            notesContainer.innerHTML = ''; notesContainer.appendChild(list);
+                        }
+
+                        async function performSearch(){
+                            const q = searchInput.value.trim();
+                            const res = await fetch(`/notes/search?q=${encodeURIComponent(q)}`);
+                            const json = await res.json();
+                            if(json && json.notes){ renderNotes(json.notes); attachDeleteHandlers(); }
+                        }
+
+                        function attachDeleteHandlers(){
+                            document.querySelectorAll('.delete-note').forEach(btn=>{
+                                btn.onclick = async function(e){
+                                    const li = e.target.closest('li.note-item');
+                                    const noteId = li && li.getAttribute('data-note-id');
+                                    if(!noteId) return alert('Missing note id');
+                                    if(!confirm('Delete this note?')) return;
+                                    const resp = await fetch(`/notes/${noteId}`, { method: 'DELETE' });
+                                    if(resp.ok){ li.remove(); }
+                                    else { alert('Failed to delete note'); }
+                                }
+                            });
+                        }
+
+                        searchBtn.addEventListener('click', performSearch);
+                        clearBtn.addEventListener('click', function(){ searchInput.value=''; performSearch(); });
+                        // attach handlers for initial page notes
+                        attachDeleteHandlers();
+                    })();
+                </script>
     </section>
 {% endblock %}

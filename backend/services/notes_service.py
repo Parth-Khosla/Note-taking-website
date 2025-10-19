@@ -186,12 +186,18 @@ def save_note(username, note_type, content=None, file=None, title=None):
 
 
 def get_notes(username):
-    user_notes = list(notes_collection.find({"username": username}, {"_id": 0}))
-    # Convert ObjectId to string for JSON responses where needed
+    # Return notes with a stable 'note_id' (string) so clients can reference/delete them.
+    user_notes = list(notes_collection.find({"username": username}))
+    out = []
     for n in user_notes:
-        if "file_id" in n and isinstance(n["file_id"], ObjectId):
-            n["file_id"] = str(n["file_id"])
-    return user_notes
+        note = dict(n)
+        _id = note.pop("_id", None)
+        if _id is not None:
+            note["note_id"] = str(_id)
+        if "file_id" in note and isinstance(note["file_id"], ObjectId):
+            note["file_id"] = str(note["file_id"])
+        out.append(note)
+    return out
 
 
 def get_note_by_file_id(file_id):
@@ -202,3 +208,59 @@ def get_note_by_file_id(file_id):
         return None
     doc = notes_collection.find_one({"file_id": oid}, {"_id": 0})
     return doc
+
+
+def delete_note(note_id):
+    """Delete a note document and any GridFS file it references. Returns True if deleted."""
+    try:
+        oid = ObjectId(note_id)
+    except Exception:
+        return False
+    doc = notes_collection.find_one({"_id": oid})
+    if not doc:
+        return False
+    # If there's a file_id stored, try to delete the GridFS file too
+    file_ref = doc.get("file_id")
+    try:
+        if file_ref:
+            if isinstance(file_ref, ObjectId):
+                fs.delete(file_ref)
+            else:
+                # try to convert string to ObjectId
+                try:
+                    fs.delete(ObjectId(str(file_ref)))
+                except Exception:
+                    pass
+    except Exception:
+        # best-effort: log and continue
+        logger.exception("Failed to delete GridFS file for note %s", note_id)
+
+    res = notes_collection.delete_one({"_id": oid})
+    return res.deleted_count == 1
+
+
+def search_notes(username, q):
+    """Search notes for a username where title, content, extracted_text, or original_filename match q (case-insensitive)."""
+    if not q:
+        return get_notes(username)
+    regex = {"$regex": q, "$options": "i"}
+    query = {
+        "username": username,
+        "$or": [
+            {"title": regex},
+            {"content": regex},
+            {"extracted_text": regex},
+            {"original_filename": regex}
+        ]
+    }
+    user_notes = list(notes_collection.find(query))
+    out = []
+    for n in user_notes:
+        note = dict(n)
+        _id = note.pop("_id", None)
+        if _id is not None:
+            note["note_id"] = str(_id)
+        if "file_id" in note and isinstance(note["file_id"], ObjectId):
+            note["file_id"] = str(note["file_id"])
+        out.append(note)
+    return out
