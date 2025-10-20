@@ -4,6 +4,7 @@ import mimetypes
 from datetime import datetime
 from backend.utils.db_connection import db
 from gridfs import GridFS
+from pymongo.collection import Collection
 from bson.objectid import ObjectId
 import logging
 
@@ -12,7 +13,7 @@ if not logger.handlers:
     # basic configuration; uvicorn/fastapi will integrate its own handlers in production
     logging.basicConfig(level=logging.INFO)
 
-notes_collection = db["notes"]
+notes_collection: Collection = db["notes"]
 fs = GridFS(db)
 
 

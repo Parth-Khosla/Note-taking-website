@@ -19,8 +19,16 @@
     <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem;">
         <label for="sort-select" style="margin:0">Sort:</label>
         <select id="sort-select">
-        <option value="desc" {% if sort == 'desc' %}selected{% endif %}>Newest first</option>
-        <option value="asc" {% if sort == 'asc' %}selected{% endif %}>Oldest first</option>
+            <option value="desc" {% if sort == 'desc' %}selected{% endif %}>Newest first</option>
+            <option value="asc" {% if sort == 'asc' %}selected{% endif %}>Oldest first</option>
+        </select>
+
+        <label for="per-page-select" style="margin:0 0 0 1rem">Per page:</label>
+        <select id="per-page-select">
+            <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+            <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+            <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
         </select>
     </div>
         <div id="notes-container">
@@ -107,15 +115,22 @@
                             const next = document.createElement('button'); next.className='btn btn-sm'; next.textContent='Next';
                             const info = document.createElement('span');
                             if(meta){
-                                info.textContent = `Page ${meta.page} — ${meta.total} notes`;
+                                const totalPages = Math.max(1, Math.ceil((meta.total || 0) / (meta.per_page || perPage)));
+                                info.textContent = `Page ${meta.page} of ${totalPages}`;
                                 currentPage = meta.page;
-                                perPage = meta.per_page;
+                                perPage = meta.per_page || perPage;
+                                // enable/disable prev/next based on total pages
+                                prev.disabled = (currentPage <= 1);
+                                next.disabled = (currentPage >= totalPages);
+                                prev.onclick = function(){ loadPage(currentPage - 1); };
+                                next.onclick = function(){ loadPage(currentPage + 1); };
                             } else {
                                 info.textContent = '';
+                                prev.disabled = (currentPage <= 1);
+                                next.disabled = false;
+                                prev.onclick = function(){ loadPage(currentPage - 1); };
+                                next.onclick = function(){ loadPage(currentPage + 1); };
                             }
-                            prev.disabled = (currentPage <= 1);
-                            prev.onclick = function(){ loadPage(currentPage - 1); };
-                            next.onclick = function(){ loadPage(currentPage + 1); };
                             pager.appendChild(prev); pager.appendChild(info); pager.appendChild(next);
                             notesContainer.appendChild(pager);
                         }
@@ -156,6 +171,11 @@
                         }
 
                         document.getElementById('sort-select').addEventListener('change', function(e){ currentSort = e.target.value; performSearch(1); });
+                        document.getElementById('per-page-select').addEventListener('change', function(e){
+                            const v = parseInt(e.target.value, 10) || 10;
+                            perPage = v;
+                            performSearch(1);
+                        });
                         searchBtn.addEventListener('click', function(){ performSearch(1); });
                         clearBtn.addEventListener('click', function(){ searchInput.value=''; performSearch(1); });
                         // attach handlers for initial page notes
