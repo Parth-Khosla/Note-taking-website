@@ -19,8 +19,9 @@ def create_note(
 
 
 @router.get("/user/{username}")
-def fetch_notes(username: str):
-    return get_notes(username)
+def fetch_notes(username: str, page: int = 1, per_page: int = 10, sort: str = "desc"):
+    """Fetch paginated notes for a user. Query params: page, per_page, sort (asc|desc)"""
+    return get_notes(username, page=page, per_page=per_page, sort=sort)
 
 
 @router.get("/file/{file_id}")
@@ -75,6 +76,6 @@ def remove_note(note_id: str):
 
 
 @router.get("/search/{username}")
-def notes_search(username: str, q: str = None):
-    # q is an optional query string parameter
-    return search_notes(username, q)
+def notes_search(username: str, q: str = None, page: int = 1, per_page: int = 10, sort: str = "desc"):
+    # q is an optional query string parameter. Supports pagination and sort.
+    return search_notes(username, q, page=page, per_page=per_page, sort=sort)

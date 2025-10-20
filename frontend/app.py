@@ -76,12 +76,30 @@ def dashboard():
         flash("Please log in first.", "warning")
         return redirect(url_for("login"))
     username = session["username"]
-    response = requests.get(f"{API_NOTES}/user/{username}").json()
+    # Support pagination and sorting. Default page=1, per_page=10, sort=desc
+    page = request.args.get('page', 1)
+    per_page = request.args.get('per_page', 10)
+    sort = request.args.get('sort', 'desc')
+    resp = requests.get(f"{API_NOTES}/user/{username}", params={"page": page, "per_page": per_page, "sort": sort})
+    response = resp.json()
     # Add file_url for notes that have a file_id so templates can directly link to backend download
-    for n in response:
+    notes = []
+    total = 0
+    page = int(page)
+    per_page = int(per_page)
+    sort = sort
+    if isinstance(response, dict) and 'notes' in response:
+        notes = response.get('notes', [])
+        total = response.get('total', 0)
+    else:
+        # fallback for older API behavior
+        notes = response
+
+    for n in notes:
         if isinstance(n, dict) and n.get("file_id"):
             n["file_url"] = f"{API_NOTES}/file/{n['file_id']}"
-    return render_template("dashboard.html", username=username, notes=response)
+
+    return render_template("dashboard.html", username=username, notes=notes, total=total, page=page, per_page=per_page, sort=sort)
 
 
 @app.route('/notes/search')
@@ -90,13 +108,31 @@ def notes_search():
         return {"error": "Not authenticated"}, 401
     username = session['username']
     q = request.args.get('q', '')
-    resp = requests.get(f"{API_NOTES}/search/{username}", params={"q": q})
+    page = request.args.get('page', 1)
+    per_page = request.args.get('per_page', 10)
+    sort = request.args.get('sort', 'desc')
+    resp = requests.get(f"{API_NOTES}/search/{username}", params={"q": q, "page": page, "per_page": per_page, "sort": sort})
     data = resp.json()
+
+    # Normalize to {notes: [...], total, page, per_page}
+    notes = []
+    total = 0
+    page_num = int(page)
+    per_page_num = int(per_page)
+    if isinstance(data, dict) and 'notes' in data:
+        notes = data.get('notes') or []
+        total = data.get('total', 0)
+        page_num = data.get('page', page_num)
+        per_page_num = data.get('per_page', per_page_num)
+    elif isinstance(data, list):
+        notes = data
+
     # add file_url where applicable
-    for n in data:
+    for n in notes:
         if isinstance(n, dict) and n.get('file_id'):
             n['file_url'] = f"{API_NOTES}/file/{n['file_id']}"
-    return {"notes": data}
+
+    return {"notes": notes, "total": total, "page": page_num, "per_page": per_page_num}
 
 
 @app.route('/notes/<note_id>', methods=['DELETE'])

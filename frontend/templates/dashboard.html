@@ -15,16 +15,23 @@
             <button id="clear-search" class="btn btn-outline btn-sm">Clear</button>
         </div>
 
-        <h3>Your Notes</h3>
-                <div id="notes-container">
-                {% if notes %}
-                        <ul class="note-list">
-                                {% for note in notes %}
-                                        <li class="note-item" data-note-id="{{ note.note_id }}">
-                                                <div class="note-meta">{{ note.note_type }} — <time>{{ note.timestamp }}</time></div>
-                                                {% if note.title %}
-                                                    <h4 class="note-title">{{ note.title }} — {{ note.note_type }} ({{ note.timestamp }})</h4>
-                                                {% endif %}
+    <h3>Your Notes</h3>
+    <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem;">
+        <label for="sort-select" style="margin:0">Sort:</label>
+        <select id="sort-select">
+        <option value="desc" {% if sort == 'desc' %}selected{% endif %}>Newest first</option>
+        <option value="asc" {% if sort == 'asc' %}selected{% endif %}>Oldest first</option>
+        </select>
+    </div>
+        <div id="notes-container">
+        {% if notes %}
+            <ul class="note-list">
+                {% for note in notes %}
+                    <li class="note-item" data-note-id="{{ note.note_id }}">
+                        <div class="note-meta">{{ note.note_type }} — <time>{{ note.timestamp }}</time></div>
+                        {% if note.title %}
+                            <h4 class="note-title">{{ note.title }}</h4>
+                        {% endif %}
                                                 {% if note.content and not (note.file_url or note.file_path) %}
                                                         <p class="note-content">{{ note.content }}</p>
                                                 {% elif note.file_url or note.file_path %}
@@ -50,6 +57,7 @@
                         <p class="muted">No notes found.</p>
                 {% endif %}
                 </div>
+                <script id="initial-meta" type="application/json">{{ {'page': page|default(1), 'per_page': per_page|default(10), 'sort': sort|default('desc')}|tojson }}</script>
                 <script>
                     (function(){
                         const searchInput = document.getElementById('note-search');
@@ -57,7 +65,16 @@
                         const clearBtn = document.getElementById('clear-search');
                         const notesContainer = document.getElementById('notes-container');
 
-                        function renderNotes(notes){
+                        const initialMetaEl = document.getElementById('initial-meta');
+                        let initialMeta = {page:1, per_page:10, sort:'desc'};
+                        try{
+                            if(initialMetaEl && initialMetaEl.textContent){ initialMeta = JSON.parse(initialMetaEl.textContent); }
+                        }catch(e){ /* ignore, fallback defaults are used */ }
+                        let currentPage = initialMeta.page || 1;
+                        let perPage = initialMeta.per_page || 10;
+                        let currentSort = initialMeta.sort || 'desc';
+
+                        function renderNotes(notes, meta){
                             if(!Array.isArray(notes) || notes.length === 0){
                                 notesContainer.innerHTML = '<p class="muted">No notes found.</p>';
                                 return;
@@ -68,23 +85,60 @@
                                 const li = document.createElement('li');
                                 li.className = 'note-item';
                                 li.setAttribute('data-note-id', n.note_id || '');
-                                const meta = document.createElement('div'); meta.className='note-meta'; meta.textContent = (n.note_type || '') + ' — ' + (n.timestamp || '');
-                                li.appendChild(meta);
-                                if(n.title){ const h4 = document.createElement('h4'); h4.className='note-title'; h4.textContent = `${n.title} — ${n.note_type || ''} (${n.timestamp || ''})`; li.appendChild(h4); }
+                                const metaDiv = document.createElement('div'); metaDiv.className='note-meta'; metaDiv.textContent = (n.note_type || '') + ' — ' + (n.timestamp || '');
+                                li.appendChild(metaDiv);
+                                if(n.title){ const h4 = document.createElement('h4'); h4.className='note-title'; h4.textContent = `${n.title}`; li.appendChild(h4); }
                                 if(n.content && !n.file_url){ const p = document.createElement('p'); p.className='note-content'; p.textContent = n.content; li.appendChild(p); }
                                 else if(n.file_url){ const p = document.createElement('p'); const a = document.createElement('a'); a.href = n.file_url; a.className='btn btn-sm'; a.textContent='View File'; p.appendChild(a); li.appendChild(p); }
                                 if(n.extracted_text){ const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent='Show extracted text'; const pre = document.createElement('pre'); pre.textContent = n.extracted_text.slice(0,1000); details.appendChild(summary); details.appendChild(pre); li.appendChild(details); }
                                 const actions = document.createElement('div'); actions.style.marginTop='0.6rem'; actions.style.display='flex'; actions.style.gap='0.5rem'; const del = document.createElement('button'); del.className='btn btn-outline btn-sm delete-note'; del.textContent='Delete'; actions.appendChild(del); li.appendChild(actions);
                                 list.appendChild(li);
                             });
-                            notesContainer.innerHTML = ''; notesContainer.appendChild(list);
+                            notesContainer.innerHTML = '';
+                            notesContainer.appendChild(list);
+
+                            // pagination controls
+                            const pager = document.createElement('div');
+                            pager.style.marginTop = '0.75rem';
+                            pager.style.display = 'flex';
+                            pager.style.alignItems = 'center';
+                            pager.style.gap = '0.5rem';
+                            const prev = document.createElement('button'); prev.className='btn btn-sm'; prev.textContent='Prev';
+                            const next = document.createElement('button'); next.className='btn btn-sm'; next.textContent='Next';
+                            const info = document.createElement('span');
+                            if(meta){
+                                info.textContent = `Page ${meta.page} — ${meta.total} notes`;
+                                currentPage = meta.page;
+                                perPage = meta.per_page;
+                            } else {
+                                info.textContent = '';
+                            }
+                            prev.disabled = (currentPage <= 1);
+                            prev.onclick = function(){ loadPage(currentPage - 1); };
+                            next.onclick = function(){ loadPage(currentPage + 1); };
+                            pager.appendChild(prev); pager.appendChild(info); pager.appendChild(next);
+                            notesContainer.appendChild(pager);
                         }
 
-                        async function performSearch(){
+                        async function performSearch(page=1){
                             const q = searchInput.value.trim();
-                            const res = await fetch(`/notes/search?q=${encodeURIComponent(q)}`);
+                            const sortSelect = document.getElementById('sort-select');
+                            const sort = sortSelect ? sortSelect.value : currentSort;
+                            const res = await fetch(`/notes/search?q=${encodeURIComponent(q)}&page=${page}&per_page=${perPage}&sort=${encodeURIComponent(sort)}`);
                             const json = await res.json();
-                            if(json && json.notes){ renderNotes(json.notes); attachDeleteHandlers(); }
+                            // API returns {notes:[], total, page, per_page}
+                            if(json){
+                                const notes = json.notes || [];
+                                const meta = { total: json.total || 0, page: json.page || page, per_page: json.per_page || perPage };
+                                renderNotes(notes, meta);
+                                attachDeleteHandlers();
+                            }
+                        }
+
+                        function loadPage(page){
+                            if(page < 1) return;
+                            currentPage = page;
+                            performSearch(page);
                         }
 
                         function attachDeleteHandlers(){
@@ -101,8 +155,9 @@
                             });
                         }
 
-                        searchBtn.addEventListener('click', performSearch);
-                        clearBtn.addEventListener('click', function(){ searchInput.value=''; performSearch(); });
+                        document.getElementById('sort-select').addEventListener('change', function(e){ currentSort = e.target.value; performSearch(1); });
+                        searchBtn.addEventListener('click', function(){ performSearch(1); });
+                        clearBtn.addEventListener('click', function(){ searchInput.value=''; performSearch(1); });
                         // attach handlers for initial page notes
                         attachDeleteHandlers();
                     })();

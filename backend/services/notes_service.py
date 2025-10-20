@@ -185,11 +185,28 @@ def save_note(username, note_type, content=None, file=None, title=None):
     return {"message": "Note saved successfully.", "file_id": str(note_data.get("file_id"))}
 
 
-def get_notes(username):
-    # Return notes with a stable 'note_id' (string) so clients can reference/delete them.
-    user_notes = list(notes_collection.find({"username": username}))
+def get_notes(username, page: int = 1, per_page: int = 10, sort: str = "desc"):
+    """Return paginated notes for a user.
+
+    Returns a dict: {"notes": [...], "total": int, "page": int, "per_page": int}
+    """
+    try:
+        page = int(page) if page and int(page) > 0 else 1
+    except Exception:
+        page = 1
+    try:
+        per_page = int(per_page) if per_page and int(per_page) > 0 else 10
+    except Exception:
+        per_page = 10
+
+    sort_dir = -1 if str(sort).lower() != "asc" else 1
+
+    query = {"username": username}
+    total = notes_collection.count_documents(query)
+    cursor = notes_collection.find(query).sort("timestamp", sort_dir).skip((page - 1) * per_page).limit(per_page)
+
     out = []
-    for n in user_notes:
+    for n in cursor:
         note = dict(n)
         _id = note.pop("_id", None)
         if _id is not None:
@@ -197,7 +214,8 @@ def get_notes(username):
         if "file_id" in note and isinstance(note["file_id"], ObjectId):
             note["file_id"] = str(note["file_id"])
         out.append(note)
-    return out
+
+    return {"notes": out, "total": total, "page": page, "per_page": per_page}
 
 
 def get_note_by_file_id(file_id):
@@ -239,10 +257,14 @@ def delete_note(note_id):
     return res.deleted_count == 1
 
 
-def search_notes(username, q):
-    """Search notes for a username where title, content, extracted_text, or original_filename match q (case-insensitive)."""
+def search_notes(username, q, page: int = 1, per_page: int = 10, sort: str = "desc"):
+    """Search notes for a username where title, content, extracted_text, or original_filename match q (case-insensitive).
+
+    Returns same paginated dict as get_notes.
+    """
     if not q:
-        return get_notes(username)
+        return get_notes(username, page=page, per_page=per_page, sort=sort)
+
     regex = {"$regex": q, "$options": "i"}
     query = {
         "username": username,
@@ -253,9 +275,22 @@ def search_notes(username, q):
             {"original_filename": regex}
         ]
     }
-    user_notes = list(notes_collection.find(query))
+
+    try:
+        page = int(page) if page and int(page) > 0 else 1
+    except Exception:
+        page = 1
+    try:
+        per_page = int(per_page) if per_page and int(per_page) > 0 else 10
+    except Exception:
+        per_page = 10
+
+    sort_dir = -1 if str(sort).lower() != "asc" else 1
+    total = notes_collection.count_documents(query)
+    cursor = notes_collection.find(query).sort("timestamp", sort_dir).skip((page - 1) * per_page).limit(per_page)
+
     out = []
-    for n in user_notes:
+    for n in cursor:
         note = dict(n)
         _id = note.pop("_id", None)
         if _id is not None:
@@ -263,4 +298,5 @@ def search_notes(username, q):
         if "file_id" in note and isinstance(note["file_id"], ObjectId):
             note["file_id"] = str(note["file_id"])
         out.append(note)
-    return out
+
+    return {"notes": out, "total": total, "page": page, "per_page": per_page}
