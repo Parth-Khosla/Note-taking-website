@@ -36,7 +36,8 @@
             <ul class="note-list">
                 {% for note in notes %}
                     <li class="note-item" data-note-id="{{ note.note_id }}">
-                        <div class="note-meta">{{ note.note_type }} — <time>{{ note.timestamp }}</time></div>
+                        <div class="note-meta">{{ note.note_type }} — <time data-ts="{{ note.timestamp }}">{{ note.timestamp }}</time></div>
+                        <span class="note-age" data-ts="{{ note.timestamp }}"></span>
                         {% if note.title %}
                             <h4 class="note-title">{{ note.title }}</h4>
                         {% endif %}
@@ -65,6 +66,11 @@
                         <p class="muted">No notes found.</p>
                 {% endif %}
                 </div>
+                <!-- loading overlay -->
+                <div id="loading-overlay" class="loading-overlay" style="display:none">
+                    <div class="spinner" role="status" aria-hidden="true"></div>
+                </div>
+
                 <script id="initial-meta" type="application/json">{{ {'page': page|default(1), 'per_page': per_page|default(10), 'sort': sort|default('desc')}|tojson }}</script>
                 <script>
                     (function(){
@@ -81,6 +87,52 @@
                         let currentPage = initialMeta.page || 1;
                         let perPage = initialMeta.per_page || 10;
                         let currentSort = initialMeta.sort || 'desc';
+
+                        // helper: format relative age
+                        function formatRelative(ts){
+                            try{
+                                const d = new Date(ts);
+                                const now = new Date();
+                                const diffMs = now - d;
+                                const diffSec = Math.floor(diffMs / 1000);
+                                if(diffSec < 3600){
+                                    return '<1 hour';
+                                }
+                                const diffHours = Math.floor(diffSec / 3600);
+                                if(diffHours < 24){
+                                    return diffHours + (diffHours === 1 ? ' hour' : ' hours');
+                                }
+                                const diffDays = Math.floor(diffHours / 24);
+                                if(diffDays < 30){
+                                    return diffDays + (diffDays === 1 ? ' day' : ' days');
+                                }
+                                const diffMonths = Math.floor(diffDays / 30);
+                                if(diffMonths < 12){
+                                    return diffMonths + (diffMonths === 1 ? ' month' : ' months');
+                                }
+                                const diffYears = Math.floor(diffMonths / 12);
+                                return diffYears + (diffYears === 1 ? ' year' : ' years');
+                            }catch(e){ return ''; }
+                        }
+
+                        function formatPretty(ts){
+                            try{
+                                const d = new Date(ts);
+                                return d.toLocaleString();
+                            }catch(e){ return ts; }
+                        }
+
+                        function showLoading(show){
+                            const el = document.getElementById('loading-overlay');
+                            if(!el) return;
+                            el.style.display = show ? 'flex' : 'none';
+                        }
+
+                        // format any server-rendered timestamps and age badges on load
+                        (function formatServerRendered(){
+                            document.querySelectorAll('time[data-ts]').forEach(t=>{ t.textContent = formatPretty(t.getAttribute('data-ts')); });
+                            document.querySelectorAll('.note-age[data-ts]').forEach(a=>{ a.textContent = formatRelative(a.getAttribute('data-ts')); });
+                        })();
 
                         function renderNotes(notes, meta){
                             if(!Array.isArray(notes) || notes.length === 0){
@@ -139,14 +191,24 @@
                             const q = searchInput.value.trim();
                             const sortSelect = document.getElementById('sort-select');
                             const sort = sortSelect ? sortSelect.value : currentSort;
-                            const res = await fetch(`/notes/search?q=${encodeURIComponent(q)}&page=${page}&per_page=${perPage}&sort=${encodeURIComponent(sort)}`);
-                            const json = await res.json();
-                            // API returns {notes:[], total, page, per_page}
-                            if(json){
-                                const notes = json.notes || [];
-                                const meta = { total: json.total || 0, page: json.page || page, per_page: json.per_page || perPage };
-                                renderNotes(notes, meta);
-                                attachDeleteHandlers();
+                            showLoading(true);
+                            try{
+                                const res = await fetch(`/notes/search?q=${encodeURIComponent(q)}&page=${page}&per_page=${perPage}&sort=${encodeURIComponent(sort)}`);
+                                const json = await res.json();
+                                // API returns {notes:[], total, page, per_page}
+                                if(json){
+                                    const notes = json.notes || [];
+                                    const meta = { total: json.total || 0, page: json.page || page, per_page: json.per_page || perPage };
+                                    renderNotes(notes, meta);
+                                    attachDeleteHandlers();
+                                    // format timestamps and ages for the newly rendered notes
+                                    document.querySelectorAll('time[data-ts]').forEach(t=>{ t.textContent = formatPretty(t.getAttribute('data-ts')); });
+                                    document.querySelectorAll('.note-age[data-ts]').forEach(a=>{ a.textContent = formatRelative(a.getAttribute('data-ts')); });
+                                }
+                            }catch(e){
+                                console.error('Search failed', e);
+                            }finally{
+                                showLoading(false);
                             }
                         }
 
